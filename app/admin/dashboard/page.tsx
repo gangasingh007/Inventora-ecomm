@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Users, Package, ShoppingCart, DollarSign, Leaf, Plus, BarChart3, TrendingUp, LogOut } from "lucide-react"
 import { ThemeToggle } from "@/components/theme-toggle"
 import Link from "next/link"
+import { ProductManagement } from "@/components/product-management"
 
 interface Analytics {
   overview: {
@@ -204,21 +205,14 @@ export default function AdminDashboard() {
             </Card>
           </TabsContent>
 
-          <TabsContent value="products">
+          <TabsContent value="products" className="space-y-6">
             <Card>
               <CardHeader>
                 <CardTitle>Product Management</CardTitle>
                 <CardDescription>Add, edit, and manage your product catalog</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="text-center py-12">
-                  <Package className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                  <p className="text-muted-foreground mb-4">Product management interface coming soon</p>
-                  <Button>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add New Product
-                  </Button>
-                </div>
+                <ProductManagement />
               </CardContent>
             </Card>
           </TabsContent>
