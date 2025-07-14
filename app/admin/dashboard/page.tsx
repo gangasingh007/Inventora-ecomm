@@ -6,10 +6,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Users, Package, ShoppingCart, DollarSign, Leaf, Plus, BarChart3, TrendingUp, LogOut } from "lucide-react"
+import { Users, Package, ShoppingCart, DollarSign, Leaf, Plus, BarChart3, LogOut } from "lucide-react"
 import { ThemeToggle } from "@/components/theme-toggle"
 import Link from "next/link"
 import { ProductManagement } from "@/components/product-management"
+import { AnalyticsDashboard } from "@/components/analytics-dashboard"
 
 interface Analytics {
   overview: {
@@ -18,14 +19,49 @@ interface Analytics {
     totalOrders: number
     totalRevenue: number
     ecoFriendlyOrders: number
+    averageOrderValue: number
+    conversionRate: number
   }
   monthlySales: Array<{
     _id: { year: number; month: number }
     total: number
     count: number
+    ecoOrders: number
   }>
   categorySales: Array<{
     _id: string
+    total: number
+    count: number
+    orderCount: number
+  }>
+  topProducts: Array<{
+    _id: string
+    name: string
+    totalSold: number
+    revenue: number
+    orderCount: number
+  }>
+  userMetrics: {
+    totalEcoOrders: number
+    usersWithCoupons: number
+    totalCouponsIssued: number
+    avgEcoOrdersPerUser: number
+  }
+  recentOrders: Array<{
+    _id: string
+    userId: string
+    total: number
+    status: string
+    isEcoFriendlyDelivery: boolean
+    createdAt: string
+  }>
+  orderStatusDistribution: Array<{
+    _id: string
+    count: number
+    totalValue: number
+  }>
+  dailySales: Array<{
+    _id: { year: number; month: number; day: number }
     total: number
     count: number
   }>
@@ -78,7 +114,7 @@ export default function AdminDashboard() {
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="spinner"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
       </div>
     )
   }
@@ -234,46 +270,7 @@ export default function AdminDashboard() {
           </TabsContent>
 
           <TabsContent value="analytics" className="space-y-6">
-            {/* Monthly Sales Chart */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <TrendingUp className="h-5 w-5 mr-2" />
-                  Monthly Sales Trend
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="h-64 flex items-center justify-center text-muted-foreground">
-                  <div className="text-center">
-                    <BarChart3 className="h-12 w-12 mx-auto mb-4" />
-                    <p>Interactive charts coming soon</p>
-                    <p className="text-sm">Monthly sales data available via API</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Category Sales */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Sales by Category</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {analytics?.categorySales?.map((category, index) => (
-                    <div key={index} className="flex items-center justify-between p-4 border rounded-lg">
-                      <div>
-                        <h4 className="font-medium">{category._id}</h4>
-                        <p className="text-sm text-muted-foreground">{category.count} items sold</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-semibold">${category.total.toFixed(2)}</p>
-                      </div>
-                    </div>
-                  )) || <div className="text-center py-8 text-muted-foreground">No category data available</div>}
-                </div>
-              </CardContent>
-            </Card>
+            {analytics && <AnalyticsDashboard data={analytics} />}
           </TabsContent>
         </Tabs>
       </div>

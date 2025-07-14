@@ -3,6 +3,7 @@ import clientPromise from "@/lib/mongodb"
 import type { Order } from "@/lib/models/Order"
 import type { User } from "@/lib/models/User"
 import { verifyToken } from "@/lib/auth"
+import { ObjectId } from "mongodb"
 
 export async function POST(request: NextRequest) {
   try {
@@ -41,28 +42,57 @@ export async function POST(request: NextRequest) {
 
     // Update user's eco-friendly order count and check for gift coupons
     if (isEcoFriendlyDelivery) {
-      const user = await users.findOne({ _id: decoded.userId })
+      const user = await users.findOne({ _id: new ObjectId(decoded.userId) })
       if (user) {
-        const newEcoCount = user.ecoFriendlyOrders + 1
-        const updateData: any = { ecoFriendlyOrders: newEcoCount }
+        const newEcoCount = (user.ecoFriendlyOrders || 0) + 1
+        const updateData: any = {
+          ecoFriendlyOrders: newEcoCount,
+          updatedAt: new Date(),
+        }
 
         // Award gift coupon every 5 eco-friendly orders
         if (newEcoCount % 5 === 0) {
-          const giftCouponCode = `ECO-GIFT-${Date.now()}`
-          updateData.giftCoupons = [...(user.giftCoupons || []), giftCouponCode]
+          const giftCouponCode = `ECO-GIFT-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`
+          const existingCoupons = user.giftCoupons || []
+          updateData.giftCoupons = [...existingCoupons, giftCouponCode]
+
+          // You could also create a coupon record in a separate collection
+          await db.collection("coupons").insertOne({
+            code: giftCouponCode,
+            userId: decoded.userId,
+            type: "eco_reward",
+            discountType: "percentage",
+            discountValue: 15, // 15% discount
+            isUsed: false,
+            expiresAt: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000), // 90 days from now
+            createdAt: new Date(),
+            description: `Eco-Friendly Reward - ${newEcoCount} orders completed!`,
+          })
         }
 
-        await users.updateOne({ _id: decoded.userId }, { $set: updateData })
+        await users.updateOne({ _id: new ObjectId(decoded.userId) }, { $set: updateData })
       }
     }
 
     // Clear cart after successful order
     await db.collection("carts").deleteOne({ userId: decoded.userId })
 
-    return NextResponse.json({
+    // Return success with coupon info if applicable
+    const response: any = {
       message: "Order placed successfully",
       orderId: result.insertedId,
-    })
+    }
+
+    if (isEcoFriendlyDelivery) {
+      const updatedUser = await users.findOne({ _id: new ObjectId(decoded.userId) })
+      if (updatedUser && updatedUser.ecoFriendlyOrders % 5 === 0) {
+        response.giftCouponAwarded = true
+        response.newCouponCode = updatedUser.giftCoupons[updatedUser.giftCoupons.length - 1]
+        response.ecoOrderCount = updatedUser.ecoFriendlyOrders
+      }
+    }
+
+    return NextResponse.json(response)
   } catch (error) {
     console.error("Error creating order:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
